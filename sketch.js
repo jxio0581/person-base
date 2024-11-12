@@ -1,15 +1,32 @@
 let img;
+let music;
 let numSegments = 300;
 let segments = [];
+let button;
 
 function preload() {
   img = loadImage('assets/Claude_Monet.jpg');
+  music = loadSound('assets/LaTale_Music.mp3');
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+
+  button = createButton("play");
+  button.mousePressed(TogglePlaying);
   calculateSegments(img, numSegments);
   // noLoop();
+}
+
+function TogglePlaying() {
+  if(!music.isPlaying()){
+    music.play();
+    music.setVolume(1);
+    button.html("Pause");
+  } else {
+    music.pause();
+    button.html("Play");
+  }
 }
 
 function draw() {
