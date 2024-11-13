@@ -74,14 +74,28 @@ class ImageSegment {
     this.y = y;
     this.width = width;
     this.height = height;
-    this.color = color;
+    this.color = this.createColor(color);  // 创建初始颜色对象
 
     this.currentWidth = width;
     this.currentHeight = height;
     this.targetWidth = width;
     this.targetHeight = height;
 
+    this.currentColor = this.color; // 当前颜色初始化为初始颜色
+    this.targetColor = this.color; // 目标颜色初始化为初始颜色
+
     
+  }
+
+  // 创建或验证颜色对象
+  createColor(c) {
+    // 检查c是否已经是一个颜色对象
+    if (c instanceof p5.Color) {
+      return c;
+    } else {
+      // 假设c是[r, g, b]数组
+      return color(c[0], c[1], c[2]);
+    }
   }
 
   draw(energy) {
@@ -90,22 +104,27 @@ class ImageSegment {
     this.currentWidth = lerp(this.currentWidth, this.targetWidth, 0.2);
     this.currentHeight = lerp(this.currentHeight, this.targetHeight, 0.2);
 
-    // let dynamicColor = color(
-    //   red(this.color) * (1 + energy / 255),
-    //   green(this.color) * (1 + energy / 255),
-    //   blue(this.color) * (1 + energy / 255)
-    // );
+    // 更新颜色目标值
+    let brightnessFactor = 1 + energy / 255;
+    let r = red(this.color) * brightnessFactor;
+    let g = green(this.color) * brightnessFactor;
+    let b = blue(this.color) * brightnessFactor;
 
-    // fill(dynamicColor);
-    fill(this.color);
+    // 确保颜色值在0到255之间
+    r = constrain(r, 0, 255);
+    g = constrain(g, 0, 255);
+    b = constrain(b, 0, 255);
+
+    this.targetColor = color(r, g, b);
+
+    // 平滑过渡当前颜色
+    this.currentColor = lerpColor(this.currentColor, this.targetColor, 0.1);
+
+    fill(this.currentColor);
     noStroke();
     rect(this.x + (this.width - this.currentWidth) / 2, this.y + (this.height - this.currentWidth) / 2, this.currentWidth, this.currentHeight);
   }
 }
-
-
-
-
 
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
