@@ -1,48 +1,57 @@
 let img;
 let music;
-let numSegments = 40; 
+let numSegments = 30;
 let segments = [];
 let button;
 let fft;
 
 function preload() {
-  img = loadImage('assets/Claude_Monet.jpg', () => console.log("Image loaded"), (e) => console.error("Error loading image", e));
-  music = loadSound('assets/LaTale_Music.mp3', () => console.log("Music loaded"), (e) => console.error("Error loading sound", e));
+  img = loadImage('assets/Claude_Monet.jpg');
+  music = loadSound('assets/LaTale_Music.mp3');
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  button = createButton("Play");
+  frameRate(30);
+  fft = new p5.FFT(0.8, 64);
+  button = createButton('Play');
   button.mousePressed(togglePlaying);
-  fft = new p5.FFT(0.95, 256); 
-  calculateSegments(img, numSegments);
+
+  calculateSegments();
 }
 
 function togglePlaying() {
-  if (!music.isPlaying()) {
-    music.play();
-    button.html("Pause");
-  } else {
+  if (music.isPlaying()) {
     music.pause();
-    button.html("Play");
+    button.html('Play');
+  } else {
+    music.play();
+    button.html('Pause');
   }
 }
 
 function draw() {
   background(255);
   let spectrum = fft.analyze();
-  for (let i = 0; i < segments.length; i++) {
-    let segment = segments[i];
+
+  // for (let segment of segments) {
+  //   let energy = spectrum[int(random(spectrum.length))];
+  //   segment.draw(energy);
+  // }
+
+  for (let segment of segments) {
     let energy = spectrum[int(random(spectrum.length))];
-    segment.draw(energy);
+    // segment.update(energy); 
+    segment.draw(energy); 
   }
+  console.log(frameCount)
 }
 
-function calculateSegments(image, numSegments) {
-  segments = []; 
-  let scaleFactor = min(width / image.width, height / image.height);
-  let displayWidth = image.width * scaleFactor;
-  let displayHeight = image.height * scaleFactor;
+function calculateSegments() {
+  segments = [];
+  let scaleFactor = min(width / img.width, height / img.height);
+  let displayWidth = img.width * scaleFactor;
+  let displayHeight = img.height * scaleFactor;
   let offsetX = (width - displayWidth) / 2;
   let offsetY = (height - displayHeight) / 2;
 
@@ -53,9 +62,8 @@ function calculateSegments(image, numSegments) {
     for (let x = 0; x < displayWidth; x += segmentWidth) {
       let originalX = x / scaleFactor;
       let originalY = y / scaleFactor;
-      let col = img.get(originalX + (segmentWidth / scaleFactor) / 2, originalY + (segmentHeight / scaleFactor) / 2);
-      let segment = new ImageSegment(offsetX + x, offsetY + y, segmentWidth, segmentHeight, col);
-      segments.push(segment);
+      let col = img.get(originalX + segmentWidth / 2 / scaleFactor, originalY + segmentHeight / 2 / scaleFactor);
+      segments.push(new ImageSegment(offsetX + x, offsetY + y, segmentWidth, segmentHeight, col));
     }
   }
 }
@@ -67,23 +75,39 @@ class ImageSegment {
     this.width = width;
     this.height = height;
     this.color = color;
+
+    this.currentWidth = width;
+    this.currentHeight = height;
+    this.targetWidth = width;
+    this.targetHeight = height;
+
+    
   }
 
   draw(energy) {
-    let dynamicSize = map(energy, 0, 255, this.width * 0.8, this.width * 1.2);
-    let dynamicColor = color(
-      red(this.color) * (1 + energy / 255),
-      green(this.color) * (1 + energy / 255),
-      blue(this.color) * (1 + energy / 255)
-    );
+    this.targetWidth = map(energy, 0, 255, this.width * 0.9, this.width * 1.6);
+    this.targetHeight = map(energy, 0, 255, this.height * 0.9, this.height * 1.6);
+    this.currentWidth = lerp(this.currentWidth, this.targetWidth, 0.2);
+    this.currentHeight = lerp(this.currentHeight, this.targetHeight, 0.2);
 
-    fill(dynamicColor);
+    // let dynamicColor = color(
+    //   red(this.color) * (1 + energy / 255),
+    //   green(this.color) * (1 + energy / 255),
+    //   blue(this.color) * (1 + energy / 255)
+    // );
+
+    // fill(dynamicColor);
+    fill(this.color);
     noStroke();
-    rect(this.x + (this.width - dynamicSize) / 2, this.y + (this.height - dynamicSize) / 2, dynamicSize, dynamicSize);
+    rect(this.x + (this.width - this.currentWidth) / 2, this.y + (this.height - this.currentWidth) / 2, this.currentWidth, this.currentHeight);
   }
 }
 
+
+
+
+
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
-  calculateSegments(img, numSegments);
+  calculateSegments();
 }
